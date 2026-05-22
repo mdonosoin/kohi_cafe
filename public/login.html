@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kōhi — Iniciar sesión</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main>
+      <div class="container">
+        <div class="form-card">
+          <h1 class="form-mark">Kōhi<span class="dot">.</span></h1>
+          <p class="form-subtitle">Iniciar sesión</p>
+
+          <div id="message" class="message" hidden></div>
+
+          <form id="login-form" novalidate>
+            <div class="field">
+              <label for="email">Email</label>
+              <input id="email" name="email" type="email" autocomplete="email" required />
+            </div>
+            <div class="field">
+              <label for="password">Contraseña</label>
+              <input id="password" name="password" type="password" autocomplete="current-password" required />
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+          </form>
+
+          <p class="form-footer">
+            ¿Aún no tienes cuenta? <a href="/register.html">Únete a la lista</a>
+          </p>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      const form = document.getElementById('login-form');
+      const messageEl = document.getElementById('message');
+
+      function showError(msg) {
+        messageEl.className = 'message error';
+        messageEl.textContent = msg;
+        messageEl.hidden = false;
+      }
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        messageEl.hidden = true;
+
+        const data = new FormData(form);
+        const email = (data.get('email') || '').trim();
+        const password = data.get('password') || '';
+
+        if (!email || !password) {
+          showError('Completa todos los campos.');
+          return;
+        }
+
+        try {
+          const res = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password }),
+          });
+
+          if (!res.ok) {
+            if (res.status === 401) showError('Email o contraseña incorrectos.');
+            else if (res.status === 400) showError('Completa todos los campos.');
+            else showError('Error inesperado. Intenta de nuevo.');
+            return;
+          }
+
+          const { token } = await res.json();
+          localStorage.setItem('kohi_token', token);
+          window.location.href = '/dashboard.html';
+        } catch (err) {
+          showError('No se pudo conectar con el servidor.');
+        }
+      });
+    </script>
+  </body>
+</html>
