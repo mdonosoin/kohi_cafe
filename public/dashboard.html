@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kōhi — Mi panel</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main>
+      <div class="container dashboard" id="dashboard" hidden>
+        <p class="greeting">
+          Hola, <span class="name" id="user-name">—</span>.
+        </p>
+        <p class="tagline">Bienvenido a Kōhi</p>
+
+        <section class="panel">
+          <p class="panel-label">Tu posición en la cola</p>
+          <p class="queue-numbers">
+            Eres el
+            <span class="position" id="position">—</span>
+            <span class="of">de</span>
+            <span id="total">—</span>
+          </p>
+          <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+          <p class="progress-caption">Cuanto más larga la barra, más cerca del primer café</p>
+        </section>
+
+        <section class="panel">
+          <p class="panel-label">Tu pase de acceso</p>
+          <div class="qr-code" id="qr-code">QR-—</div>
+          <p class="qr-caption">Muéstralo el día de la apertura</p>
+        </section>
+
+        <p class="logout"><a href="#" id="logout">Cerrar sesión</a></p>
+      </div>
+    </main>
+
+    <script>
+      const token = localStorage.getItem('kohi_token');
+      if (!token) {
+        window.location.replace('/login.html');
+      }
+
+      (async () => {
+        if (!token) return;
+        try {
+          const res = await fetch('/api/me', {
+            headers: { Authorization: 'Bearer ' + token },
+          });
+          if (!res.ok) {
+            localStorage.removeItem('kohi_token');
+            window.location.replace('/login.html');
+            return;
+          }
+          const data = await res.json();
+
+          document.getElementById('user-name').textContent = data.name;
+          document.getElementById('position').textContent = '#' + data.position;
+          document.getElementById('total').textContent = data.total;
+          document.getElementById('qr-code').textContent = 'QR-' + data.id;
+
+          const pct = data.total > 0
+            ? Math.max(2, ((data.total - data.position + 1) / data.total) * 100)
+            : 0;
+          requestAnimationFrame(() => {
+            document.getElementById('progress-fill').style.width = pct + '%';
+          });
+
+          document.getElementById('dashboard').hidden = false;
+        } catch (err) {
+          window.location.replace('/login.html');
+        }
+      })();
+
+      document.getElementById('logout').addEventListener('click', (e) => {
+        e.preventDefault();
+        localStorage.removeItem('kohi_token');
+        window.location.href = '/';
+      });
+    </script>
+  </body>
+</html>

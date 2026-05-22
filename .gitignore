@@ -1,0 +1,25 @@
+node_modules/
+
+# Local SQLite database (regenerated at runtime)
+*.db
+*.db-shm
+*.db-wal
+
+# Playwright MCP runtime artifacts
+.playwright-mcp/
+
+# Screenshots / local captures
+*.png
+
+# Local Claude Code settings
+.claude/settings.local.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Env
+.env
+.env.local

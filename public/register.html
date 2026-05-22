@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kōhi — Únete a la lista</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main>
+      <div class="container">
+        <div class="form-card" id="form-card">
+          <h1 class="form-mark">Kōhi<span class="dot">.</span></h1>
+          <p class="form-subtitle">Únete a la lista</p>
+
+          <div id="message" class="message" hidden></div>
+
+          <form id="register-form" novalidate>
+            <div class="field">
+              <label for="name">Nombre</label>
+              <input id="name" name="name" type="text" autocomplete="name" required />
+            </div>
+            <div class="field">
+              <label for="email">Email</label>
+              <input id="email" name="email" type="email" autocomplete="email" required />
+            </div>
+            <div class="field">
+              <label for="password">Contraseña</label>
+              <input id="password" name="password" type="password" autocomplete="new-password" required />
+            </div>
+            <div class="field">
+              <label for="confirm">Confirmar contraseña</label>
+              <input id="confirm" name="confirm" type="password" autocomplete="new-password" required />
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Reservar mi sitio</button>
+          </form>
+
+          <p class="form-footer">
+            ¿Ya estás dentro? <a href="/login.html">Inicia sesión</a>
+          </p>
+        </div>
+
+        <div class="form-card success-card" id="success-card" hidden>
+          <h2>¡Estás en la lista!</h2>
+          <p class="success-position-label">Tu posición</p>
+          <p class="success-position" id="success-position">#—</p>
+          <a class="btn btn-primary btn-block" href="/dashboard.html">Ver mi panel</a>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      const form = document.getElementById('register-form');
+      const messageEl = document.getElementById('message');
+      const formCard = document.getElementById('form-card');
+      const successCard = document.getElementById('success-card');
+
+      function showError(msg) {
+        messageEl.className = 'message error';
+        messageEl.textContent = msg;
+        messageEl.hidden = false;
+      }
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        messageEl.hidden = true;
+
+        const data = new FormData(form);
+        const name = (data.get('name') || '').trim();
+        const email = (data.get('email') || '').trim();
+        const password = data.get('password') || '';
+        const confirm = data.get('confirm') || '';
+
+        if (!name || !email || !password) {
+          showError('Completa todos los campos.');
+          return;
+        }
+        if (password.length < 6) {
+          showError('La contraseña debe tener al menos 6 caracteres.');
+          return;
+        }
+        if (password !== confirm) {
+          showError('Las contraseñas no coinciden.');
+          return;
+        }
+
+        try {
+          const res = await fetch('/api/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, email, password }),
+          });
+          const body = await res.json().catch(() => ({}));
+
+          if (!res.ok) {
+            if (res.status === 409) showError('Ese email ya está registrado.');
+            else if (res.status === 400) showError('Faltan campos requeridos.');
+            else showError('Error inesperado. Intenta de nuevo.');
+            return;
+          }
+
+          // Auto-login para acceder al dashboard
+          const loginRes = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password }),
+          });
+          if (loginRes.ok) {
+            const { token } = await loginRes.json();
+            localStorage.setItem('kohi_token', token);
+          }
+
+          document.getElementById('success-position').textContent = '#' + body.position;
+          formCard.hidden = true;
+          successCard.hidden = false;
+        } catch (err) {
+          showError('No se pudo conectar con el servidor.');
+        }
+      });
+    </script>
+  </body>
+</html>
